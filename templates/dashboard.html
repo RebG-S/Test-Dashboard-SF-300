@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="10">
+    <title>Simple Dashboard - Cisco SF300</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #3175a3; }
+        .navbar { background-color: #245b82 !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .table-wrapper { background-color: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .table { margin-bottom: 0; }
+        .table thead { background-color: #f8f9fa; }
+        .badge-status { border-radius: 12px; padding: 8px 12px; font-size: 0.85em; }
+        .btn-action { border-radius: 20px; padding: 5px 15px; font-size: 0.85em; font-weight: bold; }
+        .card-custom { border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15); margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark mb-4 py-3">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1 fw-bold">Cisco SF300 Simple Controller</span>
+            <div class="d-flex align-items-center text-white">
+                <span class="me-3">Halo, <strong>{{ username }}</strong>!</span>
+                <a href="/logout" class="btn btn-outline-light btn-sm" style="border-radius: 15px;">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="row mb-3 text-white">
+            <div class="col-12">
+                <h4 class="mb-1 fw-bold">Live Port Monitoring</h4>
+                <p style="opacity: 0.8;">Status Port Security & Static Inventory (Whitelist Mode)</p>
+            </div>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger" style="border-radius: 15px;" role="alert">
+                <strong>Connection Error:</strong> {{ error }}
+            </div>
+        {% endif %}
+
+        <div class="card card-custom p-2">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3" style="color: #245b82;">➕ Tambah / Update Whitelist Perangkat</h6>
+                <form action="/add_whitelist" method="POST" class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" name="port" placeholder="Port (Contoh: fa5)" required style="border-radius: 12px;">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" name="ip_device" placeholder="IP Address & Nama (Contoh: 192.168.1.99 (CCTV Depan))" required style="border-radius: 12px;">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100" style="border-radius: 12px; background-color: #3175a3; border: none;">Simpan Data</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped text-center align-middle">
+                    <thead>
+                        <tr>
+                            <th class="py-3">Port</th>
+                            <th class="py-3">Type</th>
+                            <th class="py-3">Speed (Mbps)</th>
+                            <th class="py-3">Link State</th>
+                            <th class="py-3">Perangkat Terdeteksi (IP)</th>
+                            <th class="py-3">Aksi (Eksekusi)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for port in ports %}
+                        <tr>
+                            <td class="py-3"><strong>{{ port.port }}</strong></td>
+                            <td class="py-3">{{ port.type }}</td>
+                            <td class="py-3">{{ port.speed }}</td>
+                            
+                            <td class="py-3">
+                                {% if port.state == 'Up' %}
+                                    <span class="badge bg-success badge-status">Up</span>
+                                {% else %}
+                                    <span class="badge bg-danger badge-status">Down</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="py-3">
+                                {% if port.state == 'Up' and 'Unknown Device' not in port.ip and 'Auto-Blocked' not in port.ip %}
+                                    <span class="text-primary fw-bold">{{ port.ip }}</span>
+                                {% elif port.state == 'Up' and 'Unknown Device' in port.ip %}
+                                    <span class="text-warning fw-bold">{{ port.ip }}</span>
+                                {% elif 'Auto-Blocked' in port.ip %}
+                                    <span class="text-danger fw-bold">{{ port.ip }}</span>
+                                {% else %}
+                                    <span class="text-secondary">{{ port.ip }}</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="py-3">
+                                <a href="/action/block/{{ port.port }}" class="btn btn-danger btn-action me-1">Blokir</a>
+                                <a href="/action/unblock/{{ port.port }}" class="btn btn-success btn-action me-1">Buka</a>
+                                
+                                {% if port.port in whitelist %}
+                                    <a href="/delete_whitelist/{{ port.port }}" class="btn btn-secondary btn-action" style="font-size: 0.7em;">Hapus Data</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
